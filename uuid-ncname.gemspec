@@ -35,5 +35,6 @@ DESC
   spec.add_development_dependency 'rspec',   '~> 3.0'
 
   # only need it for testing, who knew
-  spec.add_development_dependency 'uuidtools', '~> 2.1.5'
+  #spec.add_development_dependency 'uuidtools', '~> 2.1.5'
+  # actually don't even need it for that
 end
