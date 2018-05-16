@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = UUID::NCName::VERSION
   spec.authors       = ["Dorian Taylor"]
   spec.email         = ["code@doriantaylor.com"]
-
+  spec.license       = 'Apache-2.0'
   spec.homepage      = "https://github.com/doriantaylor/rb-uuid-ncname"
   spec.summary       = %q{Format a UUID as a valid NCName.}
   spec.description   = <<DESC

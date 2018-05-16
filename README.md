@@ -153,7 +153,9 @@ Or, [download it off rubygems.org](https://rubygems.org/gems/uuid-ncname).
 Bug reports and pull requests are welcome at
 [the GitHub repository](https://github.com/doriantaylor/rb-uuid-ncname).
 
-## License
+## Copyright & License
+
+©2018 [Dorian Taylor](https://doriantaylor.com/)
 
 This software is provided under
 the [Apache License, 2.0](https://www.apache.org/licenses/LICENSE-2.0).
