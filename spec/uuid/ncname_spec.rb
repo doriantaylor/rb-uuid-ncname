@@ -16,4 +16,10 @@ RSpec.describe UUID::NCName do
     expect(UUID::NCName.from_ncname(nc64)).to eq(uu)
     expect(UUID::NCName.from_ncname(nc32)).to eq(uu)
   end
+
+  it "responds properly to a radix" do
+    expect(UUID::NCName.to_ncname(uu, radix: 64)).to eq(nc64)
+    expect { UUID::NCName.to_ncname(uu, radix: :derp) }.to raise_error(
+      RuntimeError)
+  end
 end

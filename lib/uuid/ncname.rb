@@ -98,7 +98,7 @@ module UUID::NCName
   # @return [String] The NCName-formatted UUID.
 
   def self.to_ncname uuid, radix: 64
-    raise 'Radix must be either 32 or 64' unless [32, 64].any? radix
+    raise 'Radix must be either 32 or 64' unless [32, 64].include? radix
     raise 'UUID must be something stringable' if uuid.nil? or
       not uuid.respond_to? :to_s
 
