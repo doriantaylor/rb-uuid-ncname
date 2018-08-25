@@ -26,6 +26,9 @@ DESC
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  # we use named parameters
+  spec.required_ruby_version = '~> 2.0'
+
   # surprisingly do not need this
   # spec.add_runtime_dependency 'uuidtools', '~> 2.1.5'
   spec.add_runtime_dependency 'base32',    '~> 0.3.2'
