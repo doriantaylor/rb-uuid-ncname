@@ -62,12 +62,12 @@ end
 # voilà:
 
 cheap = make_cheapo_b64_uuid_ncname
-=> "EXSVv8ezPbSKWoKOkBNWKL"
+# => "EXSVv8ezPbSKWoKOkBNWKL"
 
 # now try changing it to a standard UUID:
 
 UUID::NCName.from_ncname cheap, version: 1
-=> "5d256ff1-eccf-46d2-b296-a0a3a404d58a"
+# => "5d256ff1-eccf-46d2-b296-a0a3a404d58a"
 ```
 
 Furthermore, since the default behaviour is to align the bits of the
@@ -81,7 +81,8 @@ have added a `:version` parameter to both `to_ncname` and
 `from_ncname`. The version currently defaults to `0`, the old one, but
 will issue a warning if not explicitly set. Later I will change the
 default to `1`, while keeping the warning, then later still, finally
-remove the warning with 1 as the default.
+remove the warning with 1 as the default. This should ensure that any
+code written during the transition produces the correct results.
 
 > Unless you have to support identifiers generated from version 0.1.3
 > or newer, you should be running these methods with `version: 1`.
