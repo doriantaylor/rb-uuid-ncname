@@ -7,14 +7,19 @@ require 'uuidtools'
 uu = UUIDTools::UUID.random_create
 # => #<UUID:0x3fff0e597ef8 UUID:df521e0a-9d57-4f04-9a95-fc2888decc5a>
 
-nc64 = UUID::NCName.to_ncname uu    # => "E31IeCp1X8EmpX8KIjezFK"
-nc32 = UUID::NCName.to_ncname_32 uu # => "E35jb4cu5k7yetkk7ykei33gfk"
+# see below about this :version parameter
 
-orig = UUID::NCName.from_ncname nc64
+nc64 = UUID::NCName.to_ncname uu, version: 1
+# => "E31IeCp1X8EqV_CiI3sxaJ"
+
+nc32 = UUID::NCName.to_ncname_32 uu, version: 1
+# => "E35jb4cu5k7yevfp4fcen5tc2j"
+
+orig = UUID::NCName.from_ncname nc64, version: 1
 # => "df521e0a-9d57-4f04-9a95-fc2888decc5a"
 
-orig == UUID::NCName.from_ncname nc32 # => true
-orig == uu.to_s                       # => true
+orig == UUID::NCName.from_ncname nc32, version: 1 # => true
+orig == uu.to_s                                   # => true
 
 # then you can turn it back into an object or whatever
 uu == UUIDTools::UUID.parse(orig)     # => true
