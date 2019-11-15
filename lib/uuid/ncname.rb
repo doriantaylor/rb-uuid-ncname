@@ -327,4 +327,27 @@ module UUID::NCName
     from_ncname ncname, radix: 32, format: format
   end
 
+  # Test if the given token is a UUID NCName, with a hint to its version.
+  #
+  # @param token [#to_s] The token to test
+  #
+  # @return [false, 0, 1]
+  def self.valid? token
+    token = token.to_s
+    if /^[A-P](?:[0-9A-Za-z_-]{21}|[2-7A-Za-z]{25})$/.match token
+      # false is definitely version zero but true is only maybe version 1
+      version = /[IJKLijkl]$/.match(token) ? 1 : 0
+
+      if version == 1
+        uu = from_ncname token, version: 1
+        # lol even this isn't a guarantee
+        /[89ab]/.match(uu[19]) ? 1 : version
+      else
+        version
+      end
+    else
+      false
+    end
+  end
+
 end

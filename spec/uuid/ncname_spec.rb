@@ -34,4 +34,13 @@ RSpec.describe UUID::NCName do
     expect { UUID::NCName.to_ncname(uu, radix: :derp) }.to raise_error(
       RuntimeError)
   end
+
+  it "can tell if a token is a UUID NCName" do
+    expect(UUID::NCName.valid? 'derp').to eq(false)
+    # lol it turns out i need a better uuid to test with
+    # expect(UUID::NCName.valid? nc64_old).to eq(0)
+    # expect(UUID::NCName.valid? nc32_old).to eq(0)
+    expect(UUID::NCName.valid? nc64).to eq(1)
+    expect(UUID::NCName.valid? nc32).to eq(1)
+  end
 end
