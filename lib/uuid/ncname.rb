@@ -212,9 +212,9 @@ module UUID::NCName
   # @param format [:str, :hex, :b64, :bin] An optional formatting
   #  parameter; defaults to `:str`, the canonical string representation.
   #
-  # @param version [0, 1] See #to_ncname. Defaults to 1.
+  # @param version [0, 1] See ::to_ncname. Defaults to 1.
   # 
-  # @param align [nil, true, false] See #to_ncname for details.
+  # @param align [nil, true, false] See ::to_ncname for details.
   #  Setting this parameter to `nil`, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
   #
@@ -275,9 +275,9 @@ module UUID::NCName
   #
   # @param uuid [#to_s] The UUID
   # 
-  # @param version [0, 1] See #to_ncname.
+  # @param version [0, 1] See ::to_ncname.
   # 
-  # @param align [true, false] See #to_ncname.
+  # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base64-encoded NCName
 
@@ -291,9 +291,9 @@ module UUID::NCName
   #
   # @param format [:str, :hex, :b64, :bin] The format
   # 
-  # @param version [0, 1] See #to_ncname.
+  # @param version [0, 1] See ::to_ncname.
   # 
-  # @param align [true, false] See #to_ncname.
+  # @param align [true, false] See ::to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
@@ -306,9 +306,9 @@ module UUID::NCName
   #
   # @param uuid [#to_s] The UUID
   # 
-  # @param version [0, 1] See #to_ncname.
+  # @param version [0, 1] See ::to_ncname.
   # 
-  # @param align [true, false] See #to_ncname.
+  # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base32-encoded NCName
 
@@ -322,9 +322,9 @@ module UUID::NCName
   #
   # @param format [:str, :hex, :b64, :bin] The format
   # 
-  # @param version [0, 1] See #to_ncname.
+  # @param version [0, 1] See ::to_ncname.
   # 
-  # @param align [true, false] See #to_ncname.
+  # @param align [true, false] See ::to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.

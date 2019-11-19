@@ -83,11 +83,10 @@ variants.
 
 Since I have already released this gem prior to this format change, I
 have added a `:version` parameter to both `to_ncname` and
-`from_ncname`. The version currently defaults to `0`, the old one, but
-will issue a warning if not explicitly set. Later I will change the
-default to `1`, while keeping the warning, then later still, finally
-remove the warning with 1 as the default. This should ensure that any
-code written during the transition produces the correct results.
+`from_ncname`. The version, as of 0.2.4, now defaults to `1`, the
+current one, but will still issue a warning if not explicitly
+set. Later I will finally remove the warning. This should ensure that
+any code written during the transition produces the correct results.
 
 > Unless you have to support identifiers generated from version 0.1.3
 > or older, you should be running these methods with `version: 1`.
