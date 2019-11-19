@@ -127,7 +127,7 @@ module UUID::NCName
   def self.warn_version version
     if version.nil?
       warn 'Set an explicit :version to remove this warning. See documentation.'
-      version = 0
+      version = 1
     end
 
     raise 'Version must be 0 or 1' unless [0, 1].include? version
@@ -149,9 +149,9 @@ module UUID::NCName
   #
   # @param version [0, 1] An optional formatting version, where 0 is
   #  the naïve original version and 1 moves the `variant` nybble out
-  #  to the end of the identifier. You will be warned if you do not
-  #  set this parameter explicitly. The default is currently 0, but
-  #  will change in the next version.
+  #  to the end of the identifier. You will be warned for the time
+  #  being if you do not set this parameter explicitly. The default
+  #  version is 1.
   # 
   # @param align [true, false] Optional directive to treat the
   #  terminating character as aligned to the numerical base of the
@@ -202,7 +202,7 @@ module UUID::NCName
 
   # Converts an NCName-encoded UUID back to its canonical
   # representation. Will return nil if the input doesn't match the
-  # radix (if supplied) or is otherwise malformed.  doesn't match
+  # radix (if supplied) or is otherwise malformed.
   #
   # @param ncname [#to_s] an NCName-encoded UUID, either a
   #  22-character (Base64) variant, or a 26-character (Base32) variant.
@@ -212,17 +212,20 @@ module UUID::NCName
   # @param format [:str, :hex, :b64, :bin] An optional formatting
   #  parameter; defaults to `:str`, the canonical string representation.
   #
-  # @param version [0, 1] See `to_ncname`. Defaults (for now) to 0.
+  # @param version [0, 1] See #to_ncname. Defaults to 1.
   # 
-  # @param align [true, false, nil] See `to_ncname` for details.
+  # @param align [nil, true, false] See #to_ncname for details.
   #  Setting this parameter to `nil`, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
+  #
+  # @param validate [false, true] Check that the ninth octet is
+  # correctly masked _after_ decoding.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
 
   def self.from_ncname ncname,
-      radix: nil, format: :str, version: nil, align: nil
+      radix: nil, format: :str, version: nil, align: nil, validate: false
     raise 'Format must be symbol-able' unless format.respond_to? :to_sym
     raise "Invalid format #{format}" unless FORMAT[format]
     raise 'Align must be true, false, or nil' unless
@@ -262,6 +265,9 @@ module UUID::NCName
 
     bin = TRANSFORM[version][1].call uuidver, content
 
+    # double-check the variant (high-order bits have to be 10)
+    return if validate and bin[8].ord >> 6 != 2
+
     FORMAT[format].call bin
   end
 
@@ -269,9 +275,9 @@ module UUID::NCName
   #
   # @param uuid [#to_s] The UUID
   # 
-  # @param version [0, 1] See `to_ncname`.
+  # @param version [0, 1] See #to_ncname.
   # 
-  # @param align [true, false] See `to_ncname`.
+  # @param align [true, false] See #to_ncname.
   #
   # @return [String] The Base64-encoded NCName
 
@@ -285,9 +291,9 @@ module UUID::NCName
   #
   # @param format [:str, :hex, :b64, :bin] The format
   # 
-  # @param version [0, 1] See `to_ncname`.
+  # @param version [0, 1] See #to_ncname.
   # 
-  # @param align [true, false] See `to_ncname`.
+  # @param align [true, false] See #to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
@@ -300,9 +306,9 @@ module UUID::NCName
   #
   # @param uuid [#to_s] The UUID
   # 
-  # @param version [0, 1] See `to_ncname`.
+  # @param version [0, 1] See #to_ncname.
   # 
-  # @param align [true, false] See `to_ncname`.
+  # @param align [true, false] See #to_ncname.
   #
   # @return [String] The Base32-encoded NCName
 
@@ -316,9 +322,9 @@ module UUID::NCName
   #
   # @param format [:str, :hex, :b64, :bin] The format
   # 
-  # @param version [0, 1] See `to_ncname`.
+  # @param version [0, 1] See #to_ncname.
   # 
-  # @param align [true, false] See `to_ncname`.
+  # @param align [true, false] See #to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
@@ -327,21 +333,34 @@ module UUID::NCName
     from_ncname ncname, radix: 32, format: format
   end
 
-  # Test if the given token is a UUID NCName, with a hint to its version.
+  # Test if the given token is a UUID NCName, with a hint to its
+  # version. This method can positively identify a token as a UUID
+  # NCName, but there is a small subset of UUIDs which will produce
+  # tokens which are valid in both versions. The method returns
+  # `false` if the token is invalid, otherwise it returns `0` or `1`
+  # for the guessed version.
+  #
+  # @note Version 1 tokens always end with I, J, K, or L (with base32
+  # being case-insensitive), so tokens that end in something else will
+  # be version 0.
   #
   # @param token [#to_s] The token to test
   #
   # @return [false, 0, 1]
   def self.valid? token
     token = token.to_s
-    if /^[A-P](?:[0-9A-Za-z_-]{21}|[2-7A-Za-z]{25})$/.match token
+    if /^[A-Pa-p](?:[0-9A-Za-z_-]{21}|[2-7A-Za-z]{25})$/.match token
       # false is definitely version zero but true is only maybe version 1
-      version = /[IJKLijkl]$/.match(token) ? 1 : 0
+      version = /^(?:.{21}[I-L]|.{25}[I-Li-l])$/.match(token) ? 1 : 0
 
-      if version == 1
-        uu = from_ncname token, version: 1
-        # lol even this isn't a guarantee
-        /[89ab]/.match(uu[19]) ? 1 : version
+      # try decoding with validation on 
+      uu = from_ncname token, version: version, validate: true
+
+      if version == 1 and !uu
+        # try version zero
+        uu = from_ncname token, version: 0, validate: true
+        # either zero or invalid
+        uu ? 0 : false
       else
         version
       end
