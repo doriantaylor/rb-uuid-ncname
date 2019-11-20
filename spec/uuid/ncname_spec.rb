@@ -42,5 +42,8 @@ RSpec.describe UUID::NCName do
     # expect(UUID::NCName.valid? nc32_old).to eq(0)
     expect(UUID::NCName.valid? nc64).to eq(1)
     expect(UUID::NCName.valid? nc32).to eq(1)
+    expect do
+      UUID::NCName.valid? nc64_old, strict: true
+    end.to raise_error(UUID::NCName::AmbiguousToken)
   end
 end

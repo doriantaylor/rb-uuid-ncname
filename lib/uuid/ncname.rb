@@ -137,6 +137,27 @@ module UUID::NCName
 
   public
 
+  # This error gets thrown when a UUID-NCName token can't be
+  # positively determined to be one version or the other.
+  class AmbiguousToken < ArgumentError
+
+    # @return [String] The ambiguous token
+    attr_reader :token
+    # @return [String] The UUID when decoded using version 0
+    attr_reader :v0
+    # @return [String] The UUID when decoded using version 1
+    attr_reader :v1
+
+    # @param token [#to_s] The token in question
+    # @param v0 [#to_s] UUID decoded with decoding scheme version 0
+    # @param v1 [#to_s] UUID decoded with decoding scheme version 1
+
+    def initialize token, v0: nil, v1: nil
+      @v0 = v0 || from_ncname(token, version: 0)
+      @v1 = v1 || from_ncname(token, version: 1)
+    end
+  end
+
   # Converts a UUID (or object that when converted to a string looks
   # like a UUID) to an NCName. By default it produces the Base64
   # variant.
@@ -347,8 +368,10 @@ module UUID::NCName
   #
   # @param token [#to_s] The token to test
   #
+  # @param strict [false, true]
+  #
   # @return [false, 0, 1]
-  def self.valid? token
+  def self.valid? token, strict: false
     token = token.to_s
     if /^[A-Pa-p](?:[0-9A-Za-z_-]{21}|[2-7A-Za-z]{25})$/.match token
       # false is definitely version zero but true is only maybe version 1
@@ -357,14 +380,18 @@ module UUID::NCName
       # try decoding with validation on 
       uu = from_ncname token, version: version, validate: true
 
-      if version == 1 and !uu
-        # try version zero
-        uu = from_ncname token, version: 0, validate: true
-        # either zero or invalid
-        uu ? 0 : false
-      else
-        version
+      # note that version 1 will always return something because the
+      # method of detecting it is a version 1 also happens to be the
+      # method of determining whether or not it is valid.
+      return false unless uu
+
+      if version == 1 and strict
+        # but we can also check if the input is a valid version 0
+        u0 = from_ncname token, version: 0, validate: true
+        raise AmbiguousToken.new(token, v0: u0, v1: uu) if u0
       end
+
+      version
     else
       false
     end
