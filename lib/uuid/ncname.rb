@@ -148,7 +148,7 @@ module UUID::NCName
   # @param radix [32, 64] either the number 32 or the number 64.
   #
   # @param version [0, 1] An optional formatting version, where 0 is
-  #  the naïve original version and 1 moves the `variant` nybble out
+  #  the naïve original version and 1 moves the +variant+ nybble out
   #  to the end of the identifier. You will be warned for the time
   #  being if you do not set this parameter explicitly. The default
   #  version is 1.
@@ -160,9 +160,10 @@ module UUID::NCName
   #  Base64, the overhang is only ever 4 bits. This means that when
   #  the terminating character is aligned, it will always be in the
   #  range of the letters A through P in (the RFC 3548/4648
-  #  representations of) both Base32 and Base64. When `version` is 1
+  #  representations of) both Base32 and Base64. When +version+ is 1
   #  and the terminating character is aligned, RFC4122-compliant UUIDs
-  #  will always terminate with I, J, K, or L. Defaults to `true`.
+  #  will always terminate with +I+, +J+, +K+, or +L+. Defaults to
+  #  +true+.
   # 
   # @return [String] The NCName-formatted UUID.
 
@@ -210,16 +211,16 @@ module UUID::NCName
   # @param radix [nil, 32, 64] Optional radix; will use heuristic if omitted.
   #
   # @param format [:str, :hex, :b64, :bin] An optional formatting
-  #  parameter; defaults to `:str`, the canonical string representation.
+  #  parameter; defaults to +:str+, the canonical string representation.
   #
   # @param version [0, 1] See ::to_ncname. Defaults to 1.
   # 
   # @param align [nil, true, false] See ::to_ncname for details.
-  #  Setting this parameter to `nil`, the default, will cause the
+  #  Setting this parameter to +nil+, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
   #
   # @param validate [false, true] Check that the ninth octet is
-  # correctly masked _after_ decoding.
+  #  correctly masked _after_ decoding.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
@@ -337,12 +338,12 @@ module UUID::NCName
   # version. This method can positively identify a token as a UUID
   # NCName, but there is a small subset of UUIDs which will produce
   # tokens which are valid in both versions. The method returns
-  # `false` if the token is invalid, otherwise it returns `0` or `1`
+  # +false+ if the token is invalid, otherwise it returns +0+ or +1+
   # for the guessed version.
   #
-  # @note Version 1 tokens always end with I, J, K, or L (with base32
-  # being case-insensitive), so tokens that end in something else will
-  # be version 0.
+  # @note Version 1 tokens always end with +I+, +J+, +K+, or +L+ (with
+  #  base32 being case-insensitive), so tokens that end in something
+  #  else will always be version 0.
   #
   # @param token [#to_s] The token to test
   #
