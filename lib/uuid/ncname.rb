@@ -240,8 +240,8 @@ module UUID::NCName
   #  Setting this parameter to +nil+, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
   #
-  # @param validate [false, true] Check that the ninth octet is
-  #  correctly masked _after_ decoding.
+  # @param validate [false, true] Check that the ninth (the variant)
+  #  octet is correctly masked _after_ decoding.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
