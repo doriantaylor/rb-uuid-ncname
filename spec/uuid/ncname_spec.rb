@@ -5,9 +5,9 @@ RSpec.describe UUID::NCName do
 
   uu       = 'c89e701a-acf2-4dd5-9401-539c1fcf15cb'
   nc64_old = 'EyJ5wGqzy3VlAFTnB_PFcL'
-  nc32_old = 'Ezcphagvm6lovsqavhha7z4k4l'
+  nc32_old = 'ezcphagvm6lovsqavhha7z4k4l'
   nc64     = 'EyJ5wGqzy3VQBU5wfzxXLJ'
-  nc32     = 'Ezcphagvm6loviakttqp46folj'
+  nc32     = 'ezcphagvm6loviakttqp46folj'
 
   it "turns a UUID into an NCName (old version)" do
     expect(UUID::NCName.to_ncname(uu, version: 0)).to eq(nc64_old)

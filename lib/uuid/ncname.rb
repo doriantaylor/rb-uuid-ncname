@@ -116,8 +116,9 @@ module UUID::NCName
     ],
   ]
 
-  def self.encode_version version
-    ((version & 15) + 65).chr
+  def self.encode_version version, radix
+    offset = radix == 32 ? 97 : 65
+    ((version & 15) + offset).chr
   end
 
   def self.decode_version version
@@ -192,7 +193,7 @@ module UUID::NCName
     raise 'Radix must be either 32 or 64' unless [32, 64].include? radix
     raise 'UUID must be something stringable' if uuid.nil? or
       not uuid.respond_to? :to_s
-    raise 'Align must be true or false' unless [true, false].include? align
+    align = !!align # coerce to a boolean
 
     # XXX remove this when appropriate
     version = warn_version(version)
@@ -217,9 +218,9 @@ module UUID::NCName
     raise 'Binary representation of UUID is shorter than 16 bytes' if
       bin.length < 16
 
-    uuidver, content = TRANSFORM[version][0].call bin[0, 16]
+    uuidver, content = TRANSFORM[version].first.call bin[0, 16]
 
-    encode_version(uuidver) + ENCODE[radix].call(content, align)
+    encode_version(uuidver, radix) + ENCODE[radix].call(content, align)
   end
 
   # Converts an NCName-encoded UUID back to its canonical
