@@ -11,10 +11,10 @@ module UUID::NCName
 
   MATCH = /^([A-Pa-p]) # zero-width boundary and version bookend
   ([2-7A-Za-z]{24}|[-0-9A-Z_a-z]{20}| # base32 and 64
-  (?:[1-9A-HJ-NP-Za-z]{15}_{6}|[1-9A-HJ-NP-Za-z]{16}_{5}|
-  [1-9A-HJ-NP-Za-z]{17}_{4}|[1-9A-HJ-NP-Za-z]{18}___|
-  [1-9A-HJ-NP-Za-z]{19}__|[1-9A-HJ-NP-Za-z]{20}_|
-  [1-9A-HJ-NP-Za-z]{21})) # base58 with underscore pad
+  (?:[1-9A-HJ-NP-Za-km-z]{15}_{6}|[1-9A-HJ-NP-Za-km-z]{16}_{5}|
+  [1-9A-HJ-NP-Za-km-z]{17}_{4}|[1-9A-HJ-NP-Za-km-z]{18}___|
+  [1-9A-HJ-NP-Za-km-z]{19}__|[1-9A-HJ-NP-Za-km-z]{20}_|
+  [1-9A-HJ-NP-Za-km-z]{21})) # base58 with underscore pad
   ([-0-9A-Z_a-z])$/x.freeze # lax variant bookend and zero-width boundary
 
   ENCODE = {
