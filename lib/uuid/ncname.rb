@@ -3,10 +3,19 @@ require "uuid/ncname/version"
 
 require 'base64'
 require 'base32'
+require 'base58'
 
 module UUID::NCName
 
   private
+
+  MATCH = /^([A-Pa-p]) # zero-width boundary and version bookend
+  ([2-7A-Za-z]{24}|[-0-9A-Z_a-z]{20}| # base32 and 64
+  (?:[1-9A-HJ-NP-Za-z]{15}_{6}|[1-9A-HJ-NP-Za-z]{16}_{5}|
+  [1-9A-HJ-NP-Za-z]{17}_{4}|[1-9A-HJ-NP-Za-z]{18}___|
+  [1-9A-HJ-NP-Za-z]{19}__|[1-9A-HJ-NP-Za-z]{20}_|
+  [1-9A-HJ-NP-Za-z]{21})) # base58 with underscore pad
+  ([-0-9A-Z_a-z])$/x.freeze # lax variant bookend and zero-width boundary
 
   ENCODE = {
     32 => -> (bin, align = true) {
@@ -18,7 +27,15 @@ module UUID::NCName
 
       out = ::Base32.encode bin
 
-      out.downcase[0, 25]
+      out.downcase[0, 25] # clip off the padding
+    },
+    58 => -> (bin, _) {
+      variant = bin[-1].ord >> 4
+      # note the bitcoin alphabet is the one used in draft-msporny-base58
+      out = ::Base58.binary_to_base58(bin.chop, :bitcoin)
+      # we need to pad base58 with underscores because it is variable length
+      out + (?_ * (21 - out.length)) +
+        encode_version(variant) # encode_version does variant too
     },
     64 => -> (bin, align = true) {
       if align
@@ -29,10 +46,11 @@ module UUID::NCName
 
       out = ::Base64.urlsafe_encode64 bin
 
-      out[0, 21]
+      out[0, 21] # clip off the padding
     },
   }
 
+  # note the version symbol is already removed
   DECODE = {
     32 => -> (str, align = true) {
       str = str.upcase[0, 25] + 'A======'
@@ -40,6 +58,11 @@ module UUID::NCName
       out[-1] <<= 1 if align
 
       out.pack 'C*'
+    },
+    58 => -> (str, _) {
+      variant = decode_version(str[-1]) << 4
+      str = str.chop.tr ?_, ''
+      ::Base58.base58_to_binary(str, :bitcoin) + variant.chr
     },
     64 => -> (str, align = true) {
       str = str[0, 21] + 'A=='
@@ -116,7 +139,7 @@ module UUID::NCName
     ],
   ]
 
-  def self.encode_version version, radix
+  def self.encode_version version, radix = 64
     offset = radix == 32 ? 97 : 65
     ((version & 15) + offset).chr
   end
@@ -170,7 +193,7 @@ module UUID::NCName
   # @param radix [32, 64] either the number 32 or the number 64.
   #
   # @param version [0, 1] An optional formatting version, where 0 is
-  #  the naïve original version and 1 moves the +variant+ nybble out
+  #  the naïve original version and 1 moves the `variant` nybble out
   #  to the end of the identifier. You will be warned for the time
   #  being if you do not set this parameter explicitly. The default
   #  version is 1.
@@ -182,15 +205,16 @@ module UUID::NCName
   #  Base64, the overhang is only ever 4 bits. This means that when
   #  the terminating character is aligned, it will always be in the
   #  range of the letters A through P in (the RFC 3548/4648
-  #  representations of) both Base32 and Base64. When +version+ is 1
+  #  representations of) both Base32 and Base64. When `version` is 1
   #  and the terminating character is aligned, RFC4122-compliant UUIDs
-  #  will always terminate with +I+, +J+, +K+, or +L+. Defaults to
-  #  +true+.
+  #  will always terminate with `I`, `J`, `K`, or `L`. Defaults to
+  #  `true`.
   # 
   # @return [String] The NCName-formatted UUID.
-
+  #
   def self.to_ncname uuid, radix: 64, version: nil, align: true
-    raise 'Radix must be either 32 or 64' unless [32, 64].include? radix
+    raise 'Radix must be either 32, 58, or 64' unless
+      [32, 58, 64].include? radix
     raise 'UUID must be something stringable' if uuid.nil? or
       not uuid.respond_to? :to_s
     align = !!align # coerce to a boolean
@@ -233,12 +257,12 @@ module UUID::NCName
   # @param radix [nil, 32, 64] Optional radix; will use heuristic if omitted.
   #
   # @param format [:str, :hex, :b64, :bin] An optional formatting
-  #  parameter; defaults to +:str+, the canonical string representation.
+  #  parameter; defaults to `:str`, the canonical string representation.
   #
   # @param version [0, 1] See ::to_ncname. Defaults to 1.
   # 
   # @param align [nil, true, false] See ::to_ncname for details.
-  #  Setting this parameter to +nil+, the default, will cause the
+  #  Setting this parameter to `nil`, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
   #
   # @param validate [false, true] Check that the ninth (the variant)
@@ -246,7 +270,7 @@ module UUID::NCName
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
-
+  #
   def self.from_ncname ncname,
       radix: nil, format: :str, version: nil, align: nil, validate: false
     raise 'Format must be symbol-able' unless format.respond_to? :to_sym
@@ -260,29 +284,25 @@ module UUID::NCName
     return unless ncname and ncname.respond_to? :to_s
 
     ncname = ncname.to_s.strip.gsub(/\s+/, '')
-    match  = /^([A-Za-z])([0-9A-Za-z_-]{21,})$/.match(ncname) or return
+    match  = MATCH.match(ncname) or return
+    return if align and !/[A-Pa-p]$/.match? ncname # MATCH is lax
 
+    # determine the radix from the input
     if radix
-      raise "Radix must be 32 or 64, not #{radix}" unless [32, 64].any? radix
-      return unless { 32 => 26, 64 => 22 }[radix] == ncname.length
+      raise ArgumentError, "Radix must be 32, 58, or 64, not #{radix}" unless
+        [32, 58, 64].any? radix
+      return unless { 32 => 26, 58 => 23, 64 => 22 }[radix] == ncname.length
     else
-      len = ncname.length
-
-      if ncname =~ /[_-]/
-        radix = 64
-      elsif len >= 26
-        radix = 32
-      elsif len >= 22
-        radix = 64
-      else
-        # uh will this ever get executed now that i put in that return?
-        raise "Not sure what to do with an identifier of length #{len}."
-      end
+      radix = { 26 => 32, 23 => 58, 22 => 64}[ncname.length] or
+        raise ArgumentError,
+        "Not sure what to do with an identifier of length #{ncname.length}."
     end
 
-    uuidver, content = match.captures
+    # note MATCH separates the variant
+    uuidver, *content = match.captures
+    content = content.join
 
-    align   = !!(content =~ /[A-Pa-p]$/) if align.nil?
+    align   = !!(/[A-Pa-p]$/.match? content) if align.nil?
     uuidver = decode_version uuidver
     content = DECODE[radix].call content, align
 
@@ -303,7 +323,7 @@ module UUID::NCName
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base64-encoded NCName
-
+  #
   def self.to_ncname_64 uuid, version: nil, align: true
     to_ncname uuid, version: version, align: align
   end
@@ -320,9 +340,40 @@ module UUID::NCName
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
-
+  #
   def self.from_ncname_64 ncname, format: :str, version: nil, align: nil
     from_ncname ncname, radix: 64, format: format
+  end
+
+  # Shorthand for conversion to the Base58 version
+  #
+  # @param uuid [#to_s] The UUID
+  # 
+  # @param version [0, 1] See ::to_ncname.
+  # 
+  # @param align [true, false] See ::to_ncname.
+  #
+  # @return [String] The Base58-encoded NCName
+  #
+  def self.to_ncname_58 uuid, version: nil, align: true
+    to_ncname uuid, radix: 58, version: version, align: align
+  end
+
+  # Shorthand for conversion from the Base58 version
+  #
+  # @param ncname [#to_s] The Base58 variant of the NCName-encoded UUID
+  #
+  # @param format [:str, :hex, :b64, :bin] The format
+  # 
+  # @param version [0, 1] See ::to_ncname.
+  # 
+  # @param align [true, false] See ::to_ncname.
+  #
+  # @return [String, nil] The corresponding UUID or nil if the input
+  #  is malformed.
+  #
+  def self.from_ncname_58 ncname, format: :str, version: nil, align: nil
+    from_ncname ncname, radix: 58, format: format
   end
 
   # Shorthand for conversion to the Base32 version
@@ -334,7 +385,7 @@ module UUID::NCName
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base32-encoded NCName
-
+  #
   def self.to_ncname_32 uuid, version: nil, align: true
     to_ncname uuid, radix: 32, version: version, align: align
   end
@@ -351,7 +402,7 @@ module UUID::NCName
   #
   # @return [String, nil] The corresponding UUID or nil if the input
   #  is malformed.
-
+  #
   def self.from_ncname_32 ncname, format: :str, version: nil, align: nil
     from_ncname ncname, radix: 32, format: format
   end
@@ -360,10 +411,10 @@ module UUID::NCName
   # version. This method can positively identify a token as a UUID
   # NCName, but there is a small subset of UUIDs which will produce
   # tokens which are valid in both versions. The method returns
-  # +false+ if the token is invalid, otherwise it returns +0+ or +1+
+  # `false` if the token is invalid, otherwise it returns `0` or `1`
   # for the guessed version.
   #
-  # @note Version 1 tokens always end with +I+, +J+, +K+, or +L+ (with
+  # @note Version 1 tokens always end with `I`, `J`, `K`, or `L` (with
   #  base32 being case-insensitive), so tokens that end in something
   #  else will always be version 0.
   #
@@ -372,9 +423,10 @@ module UUID::NCName
   # @param strict [false, true]
   #
   # @return [false, 0, 1]
+  #
   def self.valid? token, strict: false
     token = token.to_s
-    if /^[A-Pa-p](?:[0-9A-Za-z_-]{21}|[2-7A-Za-z]{25})$/.match token
+    if MATCH.match? token
       # false is definitely version zero but true is only maybe version 1
       version = /^(?:.{21}[I-L]|.{25}[I-Li-l])$/.match(token) ? 1 : 0
 
