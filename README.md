@@ -7,19 +7,17 @@ require 'uuidtools'
 uu = UUIDTools::UUID.random_create
 # => #<UUID:0x3fff0e597ef8 UUID:df521e0a-9d57-4f04-9a95-fc2888decc5a>
 
-# see below about this :version parameter
-
-nc64 = UUID::NCName.to_ncname uu, version: 1
+nc64 = UUID::NCName.to_ncname uu
 # => "E31IeCp1X8EqV_CiI3sxaJ"
 
-nc32 = UUID::NCName.to_ncname_32 uu, version: 1
+nc32 = UUID::NCName.to_ncname_32 uu
 # => "E35jb4cu5k7yevfp4fcen5tc2j"
 
-orig = UUID::NCName.from_ncname nc64, version: 1
+orig = UUID::NCName.from_ncname nc64
 # => "df521e0a-9d57-4f04-9a95-fc2888decc5a"
 
-orig == UUID::NCName.from_ncname nc32, version: 1 # => true
-orig == uu.to_s                                   # => true
+orig == UUID::NCName.from_ncname nc32 # => true
+orig == uu.to_s                       # => true
 
 # then you can turn it back into an object or whatever
 uu == UUIDTools::UUID.parse(orig)     # => true
@@ -27,69 +25,12 @@ uu == UUIDTools::UUID.parse(orig)     # => true
 
 ## Description
 
-The purpose of this module is to devise an alternative representation
+The purpose of this module is to [devise an alternative
+representation](https://datatracker.ietf.org/doc/html/draft-taylor-uuid-ncname)
 of the [UUID](http://tools.ietf.org/html/rfc4122) which conforms to
-the constraints of various other identifiers such as NCName, and create an
-[isomorphic](http://en.wikipedia.org/wiki/Isomorphism) mapping between
-them.
-
-## _FORMAT DEPRECATION NOTICE_
-
-After careful consideration, I have decided to change the UUID-NCName
-format in a minor yet incompatible way. In particular, I have moved
-the nybble containing
-the [`variant`](https://tools.ietf.org/html/rfc4122#section-4.1.1) to
-the very end of the identifier, whereas it previously was mixed into
-the middle somewhere.
-
-This can be considered an application
-of [Postel's Law](https://en.wikipedia.org/wiki/Postel%27s_law), based
-on the assumption that these identifiers will be generated through
-other methods, and potentially naïvely. Like the `version` field, the
-`variant` field has a limited acceptable range of values. If, for
-example, one were to attempt to generate a conforming identifier by
-simply generating a random Base32 or Base64 string, it will be
-difficult to ensure that the `variant` field will indeed conform when
-the identifier is converted to a standard UUID. By moving the
-`variant` field out to the end of the identifier, everything between
-the `version` and `variant` bookends can be generated randomly without
-any further consideration, like so:
-
-```ruby
-B64_ALPHA = ('A'..'Z').to_a + ('a'..'z').to_a + ('0'..'9').to_a + %w(- _)
-
-def make_cheapo_b64_uuid_ncname
-  vals = (1..20).map { rand 64 }               # generate the content
-  vals.push(rand(4) + 8)                       # last digit is special
-  'E' + vals.map { |v| B64_ALPHA[v] }.join('') # 'E' for UUID v4
-end
-
-# voilà:
-
-cheap = make_cheapo_b64_uuid_ncname
-# => "EXSVv8ezPbSKWoKOkBNWKL"
-
-# now try changing it to a standard UUID:
-
-UUID::NCName.from_ncname cheap, version: 1
-# => "5d256ff1-eccf-46d2-b296-a0a3a404d58a"
-```
-
-Furthermore, since the default behaviour is to align the bits of the
-last byte to the size of the encoding symbol, and since the `variant`
-bits are masked, a compliant RFC4122 UUID will _always_ end with `I`,
-`J`, `K`, or `L`, in _both_ Base32 (case-insensitive) and Base64
-variants.
-
-Since I have already released this gem prior to this format change, I
-have added a `:version` parameter to both `to_ncname` and
-`from_ncname`. The version, as of 0.2.4, now defaults to `1`, the
-current one, but will still issue a warning if not explicitly
-set. Later I will finally remove the warning. This should ensure that
-any code written during the transition produces the correct results.
-
-> Unless you have to support identifiers generated from version 0.1.3
-> or older, you should be running these methods with `version: 1`.
+the constraints of various other identifiers such as NCName, and
+create an [isomorphic](http://en.wikipedia.org/wiki/Isomorphism)
+mapping between them.
 
 ## Rationale & Method
 
@@ -197,6 +138,62 @@ of programs, libraries and frameworks. The Base32 UUID NCName
 representation should be adequate for placeholder symbols in just
 about any programming language, save for those which do not permit
 identifiers as long as 26 characters (which are extremely scarce).
+
+## _FORMAT DEPRECATION NOTICE_
+
+After careful consideration, I have decided to change the UUID-NCName
+format in a minor yet incompatible way. In particular, I have moved
+the nybble containing
+the [`variant`](https://tools.ietf.org/html/rfc4122#section-4.1.1) to
+the very end of the identifier, whereas it previously was mixed into
+the middle somewhere.
+
+This can be considered an application
+of [Postel's Law](https://en.wikipedia.org/wiki/Postel%27s_law), based
+on the assumption that these identifiers will be generated through
+other methods, and potentially naïvely. Like the `version` field, the
+`variant` field has a limited acceptable range of values. If, for
+example, one were to attempt to generate a conforming identifier by
+simply generating a random Base32 or Base64 string, it will be
+difficult to ensure that the `variant` field will indeed conform when
+the identifier is converted to a standard UUID. By moving the
+`variant` field out to the end of the identifier, everything between
+the `version` and `variant` bookends can be generated randomly without
+any further consideration, like so:
+
+```ruby
+B64_ALPHA = ('A'..'Z').to_a + ('a'..'z').to_a + ('0'..'9').to_a + %w(- _)
+
+def make_cheapo_b64_uuid_ncname
+  vals = (1..20).map { rand 64 }               # generate the content
+  vals.push(rand(4) + 8)                       # last digit is special
+  'E' + vals.map { |v| B64_ALPHA[v] }.join('') # 'E' for UUID v4
+end
+
+# voilà:
+
+cheap = make_cheapo_b64_uuid_ncname
+# => "EXSVv8ezPbSKWoKOkBNWKL"
+
+# now try changing it to a standard UUID:
+
+UUID::NCName.from_ncname cheap, version: 1
+# => "5d256ff1-eccf-46d2-b296-a0a3a404d58a"
+```
+
+Furthermore, since the default behaviour is to align the bits of the
+last byte to the size of the encoding symbol, and since the `variant`
+bits are masked, a compliant RFC4122 UUID will _always_ end with `I`,
+`J`, `K`, or `L`, in _both_ Base32 (case-insensitive) and Base64
+variants.
+
+Since I have already released this gem prior to this format change, I
+have added a `:version` parameter to both `to_ncname` and
+`from_ncname`. This parameter, which controls the compact UUID spec
+behaviour, defaults to `1`, as of the _module_ version 0.2.4.
+
+> Unless you have to support identifiers generated from version 0.1.3
+> or older, you should be running these methods with `version: 1`.
 
 ## Documentation
 

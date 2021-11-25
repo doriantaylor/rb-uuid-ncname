@@ -61,8 +61,11 @@ module UUID::NCName
     },
     58 => -> (str, _) {
       variant = decode_version(str[-1]) << 4
+      # warn str
       str = str.chop.tr ?_, ''
-      ::Base58.base58_to_binary(str, :bitcoin) + variant.chr
+      # warn str
+      # warn ::Base58.base58_to_binary(str, :bitcoin).length
+      ::Base58.base58_to_binary(str, :bitcoin) + variant.chr.b
     },
     64 => -> (str, align = true) {
       str = str[0, 21] + 'A=='
@@ -77,6 +80,7 @@ module UUID::NCName
 
   FORMAT = {
     str: -> bin { UUF % bin.unpack('C*') },
+    urn: -> bin { "urn:uuid:#{UUF % bin.unpack('C*')}" },
     hex: -> bin { bin.unpack 'H*' },
     b64: -> bin { ::Base64.strict_encode64 bin },
     bin: -> bin { bin },
@@ -125,7 +129,10 @@ module UUID::NCName
       -> (version, data) {
         version &= 0xf
 
+        # warn data.length
+
         list = data.unpack 'N4'
+        # warn list.inspect
         variant = (list[3] & 0xf0) << 24
         list[3] >>= 8
         list[3] |= ((list[2] & 0xff) << 24)
@@ -146,6 +153,16 @@ module UUID::NCName
 
   def self.decode_version version
     (version.upcase.ord - 65) % 16
+  end
+
+  def self.assert_version version
+    version = 1 unless version
+    raise ArgumentError, "version #{version.inspect} is not an integer" unless
+      version.respond_to? :to_i
+    version = version.to_i
+    raise ArgumentError, "there is no version #{version}" unless
+      TRANSFORM[version]
+    version
   end
 
   def self.warn_version version
@@ -194,9 +211,7 @@ module UUID::NCName
   #
   # @param version [0, 1] An optional formatting version, where 0 is
   #  the naïve original version and 1 moves the `variant` nybble out
-  #  to the end of the identifier. You will be warned for the time
-  #  being if you do not set this parameter explicitly. The default
-  #  version is 1.
+  #  to the end of the identifier. The default version is 1.
   # 
   # @param align [true, false] Optional directive to treat the
   #  terminating character as aligned to the numerical base of the
@@ -220,7 +235,8 @@ module UUID::NCName
     align = !!align # coerce to a boolean
 
     # XXX remove this when appropriate
-    version = warn_version(version)
+    # version = warn_version(version)
+    version = assert_version version
 
     uuid = uuid.to_s
     bin  = nil
@@ -254,9 +270,10 @@ module UUID::NCName
   # @param ncname [#to_s] an NCName-encoded UUID, either a
   #  22-character (Base64) variant, or a 26-character (Base32) variant.
   # 
-  # @param radix [nil, 32, 64] Optional radix; will use heuristic if omitted.
+  # @param radix [nil, 32, 58, 64] Optional radix; will use a heuristic
+  #  if omitted.
   #
-  # @param format [:str, :hex, :b64, :bin] An optional formatting
+  # @param format [:str, :urn, :hex, :b64, :bin] An optional formatting
   #  parameter; defaults to `:str`, the canonical string representation.
   #
   # @param version [0, 1] See ::to_ncname. Defaults to 1.
@@ -279,7 +296,8 @@ module UUID::NCName
       [true, false, nil].include? align
 
     # XXX remove this when appropriate
-    version = warn_version version
+    # version = warn_version version
+    version = assert_version version
 
     return unless ncname and ncname.respond_to? :to_s
 
@@ -342,7 +360,8 @@ module UUID::NCName
   #  is malformed.
   #
   def self.from_ncname_64 ncname, format: :str, version: nil, align: nil
-    from_ncname ncname, radix: 64, format: format
+    from_ncname ncname,
+      radix: 64, format: format, version: version, align: align
   end
 
   # Shorthand for conversion to the Base58 version
@@ -373,7 +392,8 @@ module UUID::NCName
   #  is malformed.
   #
   def self.from_ncname_58 ncname, format: :str, version: nil, align: nil
-    from_ncname ncname, radix: 58, format: format
+    from_ncname ncname,
+      radix: 58, format: format, version: version, align: align
   end
 
   # Shorthand for conversion to the Base32 version
@@ -404,7 +424,8 @@ module UUID::NCName
   #  is malformed.
   #
   def self.from_ncname_32 ncname, format: :str, version: nil, align: nil
-    from_ncname ncname, radix: 32, format: format
+    from_ncname ncname,
+      radix: 32, format: format, version: version, align: align
   end
 
   # Test if the given token is a UUID NCName, with a hint to its
