@@ -31,12 +31,12 @@ DESC
 
   # surprisingly do not need this
   # spec.add_runtime_dependency 'uuidtools', '~> 2.1.5'
-  spec.add_runtime_dependency 'base32',    '~> 0.3.2'
-  spec.add_runtime_dependency 'base58',    '~> 0.2.3'
+  spec.add_runtime_dependency 'base32',    '>= 0.3.2'
+  spec.add_runtime_dependency 'base58',    '>= 0.2.3'
 
-  spec.add_development_dependency 'bundler', '~> 2.2'
-  spec.add_development_dependency 'rake',    '~> 13.0'
-  spec.add_development_dependency 'rspec',   '~> 3.10'
+  spec.add_development_dependency 'bundler', '>= 2.2'
+  spec.add_development_dependency 'rake',    '>= 13.0'
+  spec.add_development_dependency 'rspec',   '>= 3.10'
 
   # only need it for testing, who knew
   # spec.add_development_dependency 'uuidtools', '~> 2.1.5'
