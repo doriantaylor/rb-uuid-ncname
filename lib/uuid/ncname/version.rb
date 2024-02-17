@@ -6,5 +6,5 @@ unless Module.const_defined? 'UUID'
 end
 
 module UUID::NCName
-  VERSION = "0.4.0"
+  VERSION = "0.4.1"
 end

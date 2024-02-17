@@ -212,7 +212,7 @@ module UUID::NCName
   # @param version [0, 1] An optional formatting version, where 0 is
   #  the naïve original version and 1 moves the `variant` nybble out
   #  to the end of the identifier. The default version is 1.
-  # 
+  #
   # @param align [true, false] Optional directive to treat the
   #  terminating character as aligned to the numerical base of the
   #  representation. Since the version nybble is removed from the
@@ -224,7 +224,7 @@ module UUID::NCName
   #  and the terminating character is aligned, RFC4122-compliant UUIDs
   #  will always terminate with `I`, `J`, `K`, or `L`. Defaults to
   #  `true`.
-  # 
+  #
   # @return [String] The NCName-formatted UUID.
   #
   def self.to_ncname uuid, radix: 64, version: nil, align: true
@@ -244,7 +244,7 @@ module UUID::NCName
     if uuid.length == 16
       bin = uuid
     else
-      uuid.gsub!(/\s+/, '')
+      uuid = uuid.gsub(/\s+/, '')
       if (m = /^(?:urn:uuid:)?([0-9A-Fa-f-]{32,})$/.match(uuid))
         bin = [m[1].tr('-', '')].pack 'H*'
       elsif (m = /^([0-9A-Za-z+\/_-]+=*)$/.match(uuid))
@@ -269,7 +269,7 @@ module UUID::NCName
   #
   # @param ncname [#to_s] an NCName-encoded UUID, either a
   #  22-character (Base64) variant, or a 26-character (Base32) variant.
-  # 
+  #
   # @param radix [nil, 32, 58, 64] Optional radix; will use a heuristic
   #  if omitted.
   #
@@ -277,7 +277,7 @@ module UUID::NCName
   #  parameter; defaults to `:str`, the canonical string representation.
   #
   # @param version [0, 1] See ::to_ncname. Defaults to 1.
-  # 
+  #
   # @param align [nil, true, false] See ::to_ncname for details.
   #  Setting this parameter to `nil`, the default, will cause the
   #  decoder to detect the alignment state from the identifier.
@@ -335,9 +335,9 @@ module UUID::NCName
   # Shorthand for conversion to the Base64 version
   #
   # @param uuid [#to_s] The UUID
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base64-encoded NCName
@@ -351,9 +351,9 @@ module UUID::NCName
   # @param ncname [#to_s] The Base64 variant of the NCName-encoded UUID
   #
   # @param format [:str, :hex, :b64, :bin] The format
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
@@ -367,9 +367,9 @@ module UUID::NCName
   # Shorthand for conversion to the Base58 version
   #
   # @param uuid [#to_s] The UUID
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base58-encoded NCName
@@ -383,9 +383,9 @@ module UUID::NCName
   # @param ncname [#to_s] The Base58 variant of the NCName-encoded UUID
   #
   # @param format [:str, :hex, :b64, :bin] The format
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
@@ -399,9 +399,9 @@ module UUID::NCName
   # Shorthand for conversion to the Base32 version
   #
   # @param uuid [#to_s] The UUID
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String] The Base32-encoded NCName
@@ -415,9 +415,9 @@ module UUID::NCName
   # @param ncname [#to_s] The Base32 variant of the NCName-encoded UUID
   #
   # @param format [:str, :hex, :b64, :bin] The format
-  # 
+  #
   # @param version [0, 1] See ::to_ncname.
-  # 
+  #
   # @param align [true, false] See ::to_ncname.
   #
   # @return [String, nil] The corresponding UUID or nil if the input
@@ -451,7 +451,7 @@ module UUID::NCName
       # false is definitely version zero but true is only maybe version 1
       version = /^(?:.{21}[I-L]|.{25}[I-Li-l])$/.match(token) ? 1 : 0
 
-      # try decoding with validation on 
+      # try decoding with validation on
       uu = from_ncname token, version: version, validate: true
 
       # note that version 1 will always return something because the
